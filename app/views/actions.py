@@ -1,6 +1,6 @@
-"""Performance Actions — decision support. Generates cautious, non-medical
-review prompts for flagged players. The tool recommends a staff review; it never
-prescribes training or makes a medical/selection decision."""
+"""Actions de performance — aide à la décision. Génère des points de revue
+prudents et non médicaux pour les joueurs signalés. L'outil recommande une revue
+par le staff ; il ne prescrit jamais l'entraînement et ne pose aucun diagnostic."""
 from __future__ import annotations
 
 import pandas as pd
@@ -9,50 +9,50 @@ import streamlit as st
 from app import app_core, ui
 from src.ml import explain as ml_explain
 
-# Factor -> concrete, non-prescriptive review prompt.
+# Variable -> point de revue concret et non prescriptif.
 ACTION_LIBRARY = {
-    "hsr_7d": "Review recent high-speed running exposure with the performance staff",
-    "hsr_3d": "Review recent high-speed running exposure with the performance staff",
-    "acwr": "Review acute:chronic load balance; consider load distribution this week",
-    "load_week_change": "Review the week-on-week load increase",
-    "load_7d": "Review accumulated 7-day load",
-    "fatigue": "Discuss reported fatigue with the player",
-    "fatigue_z": "Reported fatigue is elevated vs the player's own baseline — check in",
-    "muscle_soreness": "Review muscle soreness with medical/physio staff",
-    "muscle_soreness_z": "Soreness is elevated vs baseline — flag to physio",
-    "cmj_pct_change": "Compare CMJ with the individual baseline; consider a re-test",
-    "cmj_z": "Neuromuscular readiness (CMJ) is below baseline — consider a re-test",
-    "cmj_last": "Consider a CMJ re-test to confirm neuromuscular status",
-    "sleep_quality_z": "Review recent sleep quality",
-    "sleep_duration": "Review recent sleep duration",
-    "minutes_7d": "High recent match minutes — consider recovery emphasis",
-    "minutes_14d": "High 14-day match minutes — consider fixture management",
-    "matches_14d": "Fixture congestion is high — consider rotation options",
-    "days_since_last_match": "Short recovery window since the last match",
-    "monotony": "Training monotony is elevated — consider varying session load",
-    "strain": "Training strain is elevated this week",
+    "hsr_7d": "Revoir l'exposition récente à la course haute vitesse avec le staff performance",
+    "hsr_3d": "Revoir l'exposition récente à la course haute vitesse avec le staff performance",
+    "acwr": "Revoir l'équilibre charge aiguë:chronique ; envisager une répartition de la charge cette semaine",
+    "load_week_change": "Revoir l'augmentation de charge d'une semaine à l'autre",
+    "load_7d": "Revoir la charge cumulée sur 7 jours",
+    "fatigue": "Échanger avec le joueur sur la fatigue déclarée",
+    "fatigue_z": "Fatigue élevée vs sa propre référence — prendre des nouvelles",
+    "muscle_soreness": "Revoir les courbatures avec le staff médical/kiné",
+    "muscle_soreness_z": "Courbatures élevées vs référence — signaler au kiné",
+    "cmj_pct_change": "Comparer le CMJ à la référence individuelle ; envisager un re-test",
+    "cmj_z": "Disponibilité neuromusculaire (CMJ) sous la référence — envisager un re-test",
+    "cmj_last": "Envisager un re-test du CMJ pour confirmer le statut neuromusculaire",
+    "sleep_quality_z": "Revoir la qualité de sommeil récente",
+    "sleep_duration": "Revoir la durée de sommeil récente",
+    "minutes_7d": "Minutes de match récentes élevées — envisager de mettre l'accent sur la récupération",
+    "minutes_14d": "Minutes de match sur 14 jours élevées — envisager la gestion des temps de jeu",
+    "matches_14d": "Congestion des matchs élevée — envisager des options de rotation",
+    "days_since_last_match": "Fenêtre de récupération courte depuis le dernier match",
+    "monotony": "Monotonie d'entraînement élevée — envisager de varier la charge des séances",
+    "strain": "Contrainte d'entraînement élevée cette semaine",
 }
-GENERIC = "Reassess before the next high-intensity session"
+GENERIC = "Réévaluer avant la prochaine séance à haute intensité"
 
 
 def render():
-    ui.header("Performance Actions", "cautious, non-medical decision support")
+    ui.header("Actions de performance", "aide à la décision prudente, non médicale")
     a = app_core.get_analysis()
     bundle = app_core.get_bundle()
     scores = app_core.get_scores(_bundle_version=bundle["metadata"]["trained_at"])
     expl = app_core.get_explainer(bundle["metadata"]["trained_at"])
     snap = app_core.latest_snapshot(a["table"], scores, a["players"])
 
-    st.info("These are **discussion prompts for the staff**, generated from the "
-            "model's contributing factors. The system recommends a review — it "
-            "does not decide whether a player trains, plays, or is injured.")
+    st.info("Ce sont des **points de discussion pour le staff**, générés à partir "
+            "des facteurs contributifs du modèle. Le système recommande une revue — "
+            "il ne décide pas si un joueur s'entraîne, joue ou est blessé.")
 
     flagged = snap[(snap["availability_status"] == "available") &
                    (snap["monitoring_level"].isin(["HIGH", "MODERATE"]))]
     flagged = flagged.sort_values("risk_probability", ascending=False)
 
     if flagged.empty:
-        st.success("No available player currently requires escalated review.")
+        st.success("Aucun joueur disponible ne nécessite actuellement une revue renforcée.")
         ui.disclaimer()
         return
 
@@ -66,11 +66,11 @@ def render():
             with top[0]:
                 st.markdown(f"### {r['player_name']}  ·  {r['position']}")
                 st.markdown(
-                    f"Priority: {ui.chip(r['monitoring_level'], r['monitoring_level'])}"
-                    f"  ·  risk {r['risk_probability']:.0%}",
+                    f"Priorité : {ui.chip(r['monitoring_level'], r['monitoring_level'])}"
+                    f"  ·  risque {r['risk_probability']:.0%}",
                     unsafe_allow_html=True)
-            top[1].metric("PMI", f"{r['pmi']:.0f}")
-            st.markdown("**Recommended discussion:**")
+            top[1].metric("IPM", f"{r['pmi']:.0f}")
+            st.markdown("**Discussion recommandée :**")
             for act in actions:
                 st.markdown(f"- {act}")
     ui.disclaimer()
