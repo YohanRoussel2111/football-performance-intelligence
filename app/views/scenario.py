@@ -1,7 +1,8 @@
-"""Scenario Simulator — exploratory what-if. Staff adjust load, minutes, sleep,
-HSR and recovery, and the model re-scores. This is a sensitivity exploration of
-the model, NOT causal inference: it shows how the model would respond to a
-different input vector, not what would physically happen to the player."""
+"""Simulateur de scénarios — « what-if » exploratoire. Le staff ajuste charge,
+minutes, sommeil, course haute vitesse et récupération, et le modèle re-score.
+Il s'agit d'une exploration de sensibilité du modèle, PAS d'inférence causale :
+on montre comment le modèle réagirait à un autre vecteur d'entrée, pas ce qui
+arriverait physiquement au joueur."""
 from __future__ import annotations
 
 import numpy as np
@@ -15,31 +16,31 @@ from src.ml.inference import monitoring_level
 
 
 def render():
-    ui.header("Scenario Simulator", "exploratory what-if on the model")
+    ui.header("Simulateur de scénarios", "« what-if » exploratoire sur le modèle")
     a = app_core.get_analysis()
     bundle = app_core.get_bundle()
     scores = app_core.get_scores(_bundle_version=bundle["metadata"]["trained_at"])
     snap = app_core.latest_snapshot(a["table"], scores, a["players"])
 
-    st.warning("Exploratory only. Adjusting an input recomputes the model's score; "
-               "it does **not** predict the physiological effect of a training "
-               "change. Correlation ≠ causation.")
+    st.warning("Exploratoire uniquement. Ajuster une entrée recalcule le score du "
+               "modèle ; cela ne **prédit pas** l'effet physiologique d'un changement "
+               "d'entraînement. Corrélation ≠ causalité.")
 
     opts = app_core.player_options(a["players"])
     default_pid = snap.sort_values("risk_probability", ascending=False).iloc[0]["player_id"]
     default_label = next((k for k, v in opts.items() if v == default_pid), list(opts)[0])
-    label = st.selectbox("Player", list(opts), index=list(opts).index(default_label))
+    label = st.selectbox("Joueur", list(opts), index=list(opts).index(default_label))
     pid = opts[label]
     base = a["table"][a["table"].player_id == pid].sort_values("date").iloc[-1]
 
-    st.markdown("#### Adjust the coming-week scenario")
+    st.markdown("#### Ajuster le scénario de la semaine à venir")
     c = st.columns(5)
-    load_mult = c[0].slider("Training load", 0.5, 1.5, 1.0, 0.05,
-                            help="Scales recent training-load features.")
-    minutes = c[1].slider("Next match minutes", 0, 95, int(min(base["minutes_played"] or 90, 95)), 5)
-    hsr_mult = c[2].slider("High-speed running", 0.5, 1.5, 1.0, 0.05)
-    sleep = c[3].slider("Sleep (h/night)", 5.0, 9.5, float(round(base["sleep_duration"], 1)), 0.25)
-    fatigue = c[4].slider("Reported fatigue (1–7)", 1, 7, int(base["fatigue"]))
+    load_mult = c[0].slider("Charge d'entraînement", 0.5, 1.5, 1.0, 0.05,
+                            help="Met à l'échelle les variables de charge récente.")
+    minutes = c[1].slider("Minutes prochain match", 0, 95, int(min(base["minutes_played"] or 90, 95)), 5)
+    hsr_mult = c[2].slider("Course haute vitesse", 0.5, 1.5, 1.0, 0.05)
+    sleep = c[3].slider("Sommeil (h/nuit)", 5.0, 9.5, float(round(base["sleep_duration"], 1)), 0.25)
+    fatigue = c[4].slider("Fatigue déclarée (1–7)", 1, 7, int(base["fatigue"]))
 
     cols = bundle["feature_cols"]
     scenario = _apply_scenario(base, cols, load_mult, minutes, hsr_mult, sleep, fatigue,
@@ -54,13 +55,13 @@ def render():
     st.divider()
     left, right = st.columns(2)
     with left:
-        st.markdown("#### Scenario A — current")
+        st.markdown("#### Scénario A — actuel")
         st.markdown(ui.chip(lvl_base, lvl_base), unsafe_allow_html=True)
-        st.metric("Model risk", f"{p_base:.0%}")
+        st.metric("Risque modèle", f"{p_base:.0%}")
     with right:
-        st.markdown("#### Scenario B — adjusted")
+        st.markdown("#### Scénario B — ajusté")
         st.markdown(ui.chip(lvl_scn, lvl_scn), unsafe_allow_html=True)
-        st.metric("Model risk", f"{p_scn:.0%}", delta=f"{(p_scn - p_base):+.0%}",
+        st.metric("Risque modèle", f"{p_scn:.0%}", delta=f"{(p_scn - p_base):+.0%}",
                   delta_color="inverse")
 
     st.plotly_chart(_compare_chart(base, scenario), width='stretch')
@@ -75,22 +76,18 @@ def _apply_scenario(base, cols, load_mult, minutes, hsr_mult, sleep, fatigue, ta
     for c in ["hsr_3d", "hsr_7d"]:
         if c in cols:
             s[c] = base[c] * hsr_mult
-    # ACWR recomputed from adjusted acute load / (unchanged) chronic load.
     if base.get("chronic_load", 0) and "acwr" in cols:
         s["acwr"] = np.clip((base["acute_load"] * load_mult) / max(base["chronic_load"], 1), 0, 3)
-    # Minutes / congestion (add the scenario match into the 7/14d windows).
     added = minutes - (base["minutes_played"] or 0)
     if "minutes_7d" in cols:
         s["minutes_7d"] = max(0, base["minutes_7d"] + added)
     if "minutes_14d" in cols:
         s["minutes_14d"] = max(0, base["minutes_14d"] + added)
-    # Sleep -> duration + z vs the player's own baseline.
     if "sleep_duration" in cols:
         s["sleep_duration"] = sleep
     if "sleep_quality_z" in cols and "sleep_duration_baseline" in base:
         base_sleep = base.get("sleep_duration_baseline", sleep)
         s["sleep_quality_z"] = np.clip((sleep - base_sleep) / 0.6, -4, 4)
-    # Fatigue -> level + z vs baseline.
     if "fatigue" in cols:
         s["fatigue"] = fatigue
     if "fatigue_z" in cols and "fatigue_baseline" in base:
@@ -100,17 +97,16 @@ def _apply_scenario(base, cols, load_mult, minutes, hsr_mult, sleep, fatigue, ta
 
 
 def _compare_chart(base, scenario):
-    labels = ["7d load", "HSR 7d", "ACWR", "Minutes 7d", "Sleep", "Fatigue"]
+    labels = ["Charge 7 j", "HSR 7 j", "ACWR", "Minutes 7 j", "Sommeil", "Fatigue"]
     keys = ["load_7d", "hsr_7d", "acwr", "minutes_7d", "sleep_duration", "fatigue"]
-    # normalize each pair to base for a readable relative comparison
     a_vals, b_vals = [], []
     for k in keys:
         bv = float(base.get(k, 0)) or 1e-9
         a_vals.append(1.0)
         b_vals.append(float(scenario.get(k, 0)) / bv)
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=labels, y=a_vals, name="A (current)", marker_color=charts.NEUTRAL))
-    fig.add_trace(go.Bar(x=labels, y=b_vals, name="B (adjusted)", marker_color=charts.PRIMARY))
-    fig.update_yaxes(title="relative to current")
+    fig.add_trace(go.Bar(x=labels, y=a_vals, name="A (actuel)", marker_color=charts.NEUTRAL))
+    fig.add_trace(go.Bar(x=labels, y=b_vals, name="B (ajusté)", marker_color=charts.PRIMARY))
+    fig.update_yaxes(title="relatif à l'actuel")
     fig.update_layout(barmode="group")
-    return charts.apply_theme(fig, title="Indicator comparison (A vs B)", height=340)
+    return charts.apply_theme(fig, title="Comparaison des indicateurs (A vs B)", height=340)
