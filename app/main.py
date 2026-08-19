@@ -1,7 +1,7 @@
 """
-Football Performance Intelligence — Streamlit entry point.
+Football Performance Intelligence — point d'entrée Streamlit.
 
-Run with:  streamlit run app/main.py    (or:  python run_app.py)
+Lancer avec :  streamlit run app/main.py    (ou :  python run_app.py)
 """
 from __future__ import annotations
 
@@ -22,30 +22,30 @@ st.set_page_config(
 from app import app_core, ui                      # noqa: E402
 from app.views import (                           # noqa: E402
     executive, squad, player, load_monitoring, availability, ai_risk,
-    actions, scenario, model_perf, model_monitor, data_quality,
+    actions, scenario, model_perf, model_monitor, data_quality, science,
 )
 
 
 def _demo_controls():
-    st.sidebar.markdown("### ⚡ Demo controls")
-    if st.sidebar.button("1 · Load Demo Dataset", width='stretch'):
+    st.sidebar.markdown("### ⚡ Contrôles démo")
+    if st.sidebar.button("1 · Charger le jeu de démo", width='stretch'):
         app_core.get_analysis.clear()
-        with st.spinner("Generating synthetic season & running pipeline…"):
+        with st.spinner("Génération de la saison synthétique & pipeline…"):
             a = app_core.get_analysis()
         st.sidebar.success(
-            f"{a['quality_report'].n_players} players · "
-            f"{a['quality_report'].n_observations:,} obs loaded")
-    if st.sidebar.button("2 · Run Model", width='stretch'):
-        with st.spinner("Training & temporally validating models…"):
+            f"{a['quality_report'].n_players} joueurs · "
+            f"{a['quality_report'].n_observations:,} obs chargées")
+    if st.sidebar.button("2 · Lancer le modèle", width='stretch'):
+        with st.spinner("Entraînement & validation temporelle…"):
             b = app_core.retrain_model()
         st.sidebar.success(
             f"{b['metadata']['selected_model']} · "
-            f"test ROC-AUC {b['test_metrics']['roc_auc']:.2f}")
-    if st.sidebar.button("3 · Generate Predictions", width='stretch'):
-        with st.spinner("Scoring squad & writing predictions…"):
+            f"ROC-AUC (test) {b['test_metrics']['roc_auc']:.2f}")
+    if st.sidebar.button("3 · Générer les prédictions", width='stretch'):
+        with st.spinner("Scoring de l'effectif & écriture des prédictions…"):
             n = _write_predictions()
-        st.sidebar.success(f"{n} predictions written to SQLite")
-    st.sidebar.caption("Then open **AI Risk / Monitoring → Explain a player**.")
+        st.sidebar.success(f"{n} prédictions écrites dans SQLite")
+    st.sidebar.caption("Puis ouvrir **Risque IA / Suivi → Expliquer un joueur**.")
 
 
 def _write_predictions() -> int:
@@ -67,33 +67,35 @@ def main():
     ui.brand_sidebar()
 
     pages = {
-        "Command centre": [
-            st.Page(executive.render, title="Executive Brief", icon="🎯", default=True,
+        "Centre de commande": [
+            st.Page(executive.render, title="Synthèse Direction", icon="🎯", default=True,
                     url_path="executive"),
-            st.Page(squad.render, title="Squad Overview", icon="👥", url_path="squad"),
+            st.Page(squad.render, title="Vue d'ensemble", icon="👥", url_path="squad"),
         ],
-        "Player & load": [
-            st.Page(player.render, title="Player Profile", icon="👤", url_path="player"),
-            st.Page(load_monitoring.render, title="Load Monitoring", icon="📈",
+        "Joueur & charge": [
+            st.Page(player.render, title="Profil Joueur", icon="👤", url_path="player"),
+            st.Page(load_monitoring.render, title="Suivi de la charge", icon="📈",
                     url_path="load"),
-            st.Page(availability.render, title="Availability", icon="🩹",
+            st.Page(availability.render, title="Disponibilité", icon="🩹",
                     url_path="availability"),
         ],
         "Intelligence": [
-            st.Page(ai_risk.render, title="AI Risk / Monitoring", icon="🤖",
+            st.Page(ai_risk.render, title="Risque IA / Suivi", icon="🤖",
                     url_path="ai-risk"),
-            st.Page(actions.render, title="Performance Actions", icon="✅",
+            st.Page(actions.render, title="Actions de performance", icon="✅",
                     url_path="actions"),
-            st.Page(scenario.render, title="Scenario Simulator", icon="🧪",
+            st.Page(scenario.render, title="Simulateur de scénarios", icon="🧪",
                     url_path="scenario"),
         ],
-        "Model & data ops": [
-            st.Page(model_perf.render, title="Model Performance", icon="📊",
+        "Modèle & science": [
+            st.Page(model_perf.render, title="Performance du modèle", icon="📊",
                     url_path="model-performance"),
-            st.Page(model_monitor.render, title="Model Monitoring", icon="🛰️",
+            st.Page(model_monitor.render, title="Suivi du modèle", icon="🛰️",
                     url_path="model-monitoring"),
-            st.Page(data_quality.render, title="Data Quality", icon="🧹",
+            st.Page(data_quality.render, title="Qualité des données", icon="🧹",
                     url_path="data-quality"),
+            st.Page(science.render, title="Science & Méthodologie", icon="🔬",
+                    url_path="science"),
         ],
     }
     nav = st.navigation(pages)
