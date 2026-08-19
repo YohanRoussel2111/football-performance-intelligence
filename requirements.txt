@@ -1,0 +1,21 @@
+# Football Performance Intelligence — dependencies
+# Pins are lower bounds known to work; the app was developed and tested with the
+# versions noted in the README ("Environment tested").
+
+# Data & scientific stack
+pandas>=2.1
+numpy>=1.26
+scipy>=1.11
+scikit-learn>=1.4
+
+# Machine learning & explainability
+xgboost>=2.0
+shap>=0.44
+joblib>=1.3
+
+# Application & visualization
+streamlit>=1.40
+plotly>=5.20
+
+# Testing
+pytest>=7.4

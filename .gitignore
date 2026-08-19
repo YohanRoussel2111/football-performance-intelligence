@@ -1,0 +1,19 @@
+# Generated artefacts (rebuild with `python build_demo.py`)
+data/*.db
+data/raw/
+data/processed/
+models/*.joblib
+models/*.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
