@@ -74,47 +74,47 @@ def load_trend_chart(df: pd.DataFrame) -> go.Figure:
     """7-day vs 28-day load with match-day markers."""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=df["date"], y=df["load_7d"], name="Acute load (7d)",
+        x=df["date"], y=df["load_7d"], name="Charge aiguë (7 j)",
         line=dict(color=PRIMARY, width=2.2), mode="lines",
-        hovertemplate="%{x|%d %b}<br>7d load: %{y:.0f}<extra></extra>"))
+        hovertemplate="%{x|%d %b}<br>Charge 7 j : %{y:.0f}<extra></extra>"))
     fig.add_trace(go.Scatter(
-        x=df["date"], y=df["load_28d"] / 4, name="Chronic load (28d ÷4)",
+        x=df["date"], y=df["load_28d"] / 4, name="Charge chronique (28 j ÷4)",
         line=dict(color=ACCENT, width=1.8, dash="dot"), mode="lines",
-        hovertemplate="%{x|%d %b}<br>28d load ÷4: %{y:.0f}<extra></extra>"))
+        hovertemplate="%{x|%d %b}<br>Charge 28 j ÷4 : %{y:.0f}<extra></extra>"))
     matches = df[df["played_match"] == True] if "played_match" in df else df.iloc[0:0]
     if len(matches):
         fig.add_trace(go.Scatter(
             x=matches["date"], y=matches["load_7d"], name="Match",
             mode="markers", marker=dict(color=WARN, size=7, symbol="diamond"),
-            hovertemplate="Match %{x|%d %b}<br>minutes: %{customdata}<extra></extra>",
+            hovertemplate="Match %{x|%d %b}<br>minutes : %{customdata}<extra></extra>",
             customdata=matches["minutes_played"] if "minutes_played" in matches else None))
-    return apply_theme(fig, title="Training & match load")
+    return apply_theme(fig, title="Charge d'entraînement & de match")
 
 
 def acwr_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
     fig.add_hrect(y0=0.8, y1=1.3, fillcolor=GOOD, opacity=0.10, line_width=0,
-                  annotation_text="sweet spot", annotation_position="top left",
+                  annotation_text="zone optimale", annotation_position="top left",
                   annotation_font_color=MUTED)
     fig.add_trace(go.Scatter(
         x=df["date"], y=df["acwr"], name="ACWR",
         line=dict(color=PRIMARY, width=2), mode="lines",
         hovertemplate="%{x|%d %b}<br>ACWR: %{y:.2f}<extra></extra>"))
     fig.add_hline(y=1.5, line=dict(color=BAD, width=1, dash="dash"))
-    return apply_theme(fig, title="Acute:chronic workload ratio", height=300)
+    return apply_theme(fig, title="Ratio charge aiguë:chronique (ACWR)", height=300)
 
 
 def wellness_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
-    series = [("fatigue", "Fatigue", WARN), ("muscle_soreness", "Soreness", BAD),
-              ("sleep_quality", "Sleep quality", PRIMARY), ("stress", "Stress", ACCENT)]
+    series = [("fatigue", "Fatigue", WARN), ("muscle_soreness", "Courbatures", BAD),
+              ("sleep_quality", "Qualité du sommeil", PRIMARY), ("stress", "Stress", ACCENT)]
     for col, name, color in series:
         if col in df:
             fig.add_trace(go.Scatter(
                 x=df["date"], y=df[f"{col}_7d"] if f"{col}_7d" in df else df[col],
                 name=name, line=dict(color=color, width=1.8), mode="lines",
                 hovertemplate="%{x|%d %b}<br>" + name + ": %{y:.1f}<extra></extra>"))
-    return apply_theme(fig, title="Wellness (7-day rolling, 1–7 scale)", height=300)
+    return apply_theme(fig, title="Bien-être (moyenne mobile 7 j, échelle 1–7)", height=300)
 
 
 def cmj_chart(df: pd.DataFrame) -> go.Figure:
@@ -122,15 +122,15 @@ def cmj_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
     if "cmj_baseline" in df:
         fig.add_trace(go.Scatter(
-            x=df["date"], y=df["cmj_baseline"], name="Individual baseline",
+            x=df["date"], y=df["cmj_baseline"], name="Référence individuelle",
             line=dict(color=MUTED, width=1.4, dash="dot"), mode="lines",
-            hovertemplate="baseline: %{y:.1f} cm<extra></extra>"))
+            hovertemplate="référence : %{y:.1f} cm<extra></extra>"))
     fig.add_trace(go.Scatter(
-        x=meas["date"], y=meas["cmj_height"], name="CMJ height",
+        x=meas["date"], y=meas["cmj_height"], name="Hauteur CMJ",
         mode="lines+markers", line=dict(color=PRIMARY, width=2),
         marker=dict(size=6),
-        hovertemplate="%{x|%d %b}<br>CMJ: %{y:.1f} cm<extra></extra>"))
-    return apply_theme(fig, title="Countermovement jump vs individual baseline", height=300)
+        hovertemplate="%{x|%d %b}<br>CMJ : %{y:.1f} cm<extra></extra>"))
+    return apply_theme(fig, title="Détente verticale (CMJ) vs référence individuelle", height=300)
 
 
 def risk_trajectory_chart(scored: pd.DataFrame, bands: dict | None = None) -> go.Figure:
@@ -140,11 +140,11 @@ def risk_trajectory_chart(scored: pd.DataFrame, bands: dict | None = None) -> go
         fig.add_hrect(y0=bands["moderate"], y1=bands["high"], fillcolor=WARN,
                       opacity=0.07, line_width=0)
     fig.add_trace(go.Scatter(
-        x=scored["date"], y=scored["risk_probability"], name="Model risk",
+        x=scored["date"], y=scored["risk_probability"], name="Risque modèle",
         line=dict(color=PRIMARY, width=2), mode="lines", fill="tozeroy",
         fillcolor="rgba(63,182,201,0.12)",
-        hovertemplate="%{x|%d %b}<br>risk: %{y:.0%}<extra></extra>"))
-    return apply_theme(fig, title="Model risk trajectory", height=300)
+        hovertemplate="%{x|%d %b}<br>risque : %{y:.0%}<extra></extra>"))
+    return apply_theme(fig, title="Trajectoire du risque (modèle)", height=300)
 
 
 def shap_contribution_chart(explanation: dict, top_n: int = 8) -> go.Figure:
@@ -155,27 +155,27 @@ def shap_contribution_chart(explanation: dict, top_n: int = 8) -> go.Figure:
     colors = [BAD if v > 0 else GOOD for v in vals]
     fig = go.Figure(go.Bar(
         x=vals, y=labels, orientation="h", marker_color=colors,
-        hovertemplate="%{y}<br>contribution: %{x:+.3f}<extra></extra>"))
+        hovertemplate="%{y}<br>contribution : %{x:+.3f}<extra></extra>"))
     fig.add_vline(x=0, line=dict(color=MUTED, width=1))
-    fig.update_layout(xaxis_title="← lowers risk    contribution to risk    raises risk →")
-    return apply_theme(fig, title="Why is this player flagged? (SHAP)", height=340)
+    fig.update_layout(xaxis_title="← diminue le risque    contribution au risque    augmente le risque →")
+    return apply_theme(fig, title="Pourquoi ce joueur est-il signalé ? (SHAP)", height=340)
 
 
 def calibration_chart(curve: dict, brier: float | None = None) -> go.Figure:
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], name="Perfect calibration",
+    fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], name="Calibration parfaite",
                              line=dict(color=MUTED, width=1.2, dash="dash"),
                              hoverinfo="skip"))
     fig.add_trace(go.Scatter(
         x=curve["mean_predicted"], y=curve["observed_frequency"],
-        name="Model", mode="lines+markers", line=dict(color=PRIMARY, width=2),
+        name="Modèle", mode="lines+markers", line=dict(color=PRIMARY, width=2),
         marker=dict(size=8),
-        hovertemplate="predicted: %{x:.0%}<br>observed: %{y:.0%}<extra></extra>"))
-    title = "Calibration (reliability) curve"
+        hovertemplate="prédit : %{x:.0%}<br>observé : %{y:.0%}<extra></extra>"))
+    title = "Courbe de calibration (fiabilité)"
     if brier is not None:
         title += f"  ·  Brier = {brier:.3f}"
-    fig.update_xaxes(title="Predicted probability", range=[0, 1])
-    fig.update_yaxes(title="Observed frequency", range=[0, 1])
+    fig.update_xaxes(title="Probabilité prédite", range=[0, 1])
+    fig.update_yaxes(title="Fréquence observée", range=[0, 1])
     return apply_theme(fig, title=title, height=360)
 
 
@@ -184,8 +184,8 @@ def global_importance_chart(imp: pd.DataFrame, top_n: int = 12) -> go.Figure:
     fig = go.Figure(go.Bar(
         x=d["mean_abs_shap"], y=d["label"], orientation="h",
         marker_color=PRIMARY,
-        hovertemplate="%{y}<br>mean |SHAP|: %{x:.3f}<extra></extra>"))
-    return apply_theme(fig, title="Global feature importance (mean |SHAP|)", height=420)
+        hovertemplate="%{y}<br>|SHAP| moyen : %{x:.3f}<extra></extra>"))
+    return apply_theme(fig, title="Importance globale des variables (|SHAP| moyen)", height=420)
 
 
 def pmi_contributions_chart(contribs: dict) -> go.Figure:
@@ -193,9 +193,9 @@ def pmi_contributions_chart(contribs: dict) -> go.Figure:
     vals = list(contribs.values())
     fig = go.Figure(go.Bar(
         x=labels, y=vals, marker_color=[PRIMARY, ACCENT, WARN, NEUTRAL],
-        hovertemplate="%{x}<br>contribution: %{y:.1f}<extra></extra>"))
-    fig.update_yaxes(title="PMI contribution")
-    return apply_theme(fig, title="PMI dimension contributions", height=300)
+        hovertemplate="%{x}<br>contribution : %{y:.1f}<extra></extra>"))
+    fig.update_yaxes(title="Contribution à l'IPM")
+    return apply_theme(fig, title="Contributions par dimension (IPM)", height=300)
 
 
 def squad_load_bar(latest: pd.DataFrame) -> go.Figure:
@@ -203,14 +203,14 @@ def squad_load_bar(latest: pd.DataFrame) -> go.Figure:
     fig = go.Figure(go.Bar(
         x=d["load_7d"], y=d["player_name"], orientation="h",
         marker_color=[STATUS_COLORS.get(s, NEUTRAL) for s in d.get("monitoring_level", [])] or PRIMARY,
-        hovertemplate="%{y}<br>7d load: %{x:.0f}<extra></extra>"))
-    return apply_theme(fig, title="Squad 7-day load", height=max(360, 18 * len(d)))
+        hovertemplate="%{y}<br>charge 7 j : %{x:.0f}<extra></extra>"))
+    return apply_theme(fig, title="Charge de l'effectif (7 jours)", height=max(360, 18 * len(d)))
 
 
 def prediction_distribution_chart(probs, ref_hist=None) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(go.Histogram(x=probs, nbinsx=20, marker_color=PRIMARY,
-                               opacity=0.85, name="Current"))
-    fig.update_xaxes(title="Predicted risk probability", range=[0, 1])
-    fig.update_yaxes(title="Count")
-    return apply_theme(fig, title="Prediction distribution", height=300)
+                               opacity=0.85, name="Actuel"))
+    fig.update_xaxes(title="Probabilité de risque prédite", range=[0, 1])
+    fig.update_yaxes(title="Effectif")
+    return apply_theme(fig, title="Distribution des prédictions", height=300)
